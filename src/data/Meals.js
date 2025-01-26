@@ -105,7 +105,6 @@ const Meals = [
       "Spätzle",
     ],
   },
-
   {
     name: "Lachs mit Dillsoße",
     categories: ["Fischgerichte", "Internationale Gerichte", "Regional"],
@@ -136,7 +135,6 @@ const Meals = [
       "Kräuter",
     ],
   },
-
   {
     name: "Spaghetti Bolognese",
     categories: ["Nudelgerichte", "Internationale Gerichte", "Fleischgerichte"],
@@ -185,7 +183,6 @@ const Meals = [
     nutritions: { calories: 350, protein: 20, carbs: 50, fat: 10 },
     ingredients: ["Linsen", "Karotten", "Zwiebeln", "Tomaten", "Gewürze"],
   },
-
   {
     name: "Caesar Salat",
     categories: ["Salate", "Internationale Gerichte"],
@@ -216,7 +213,6 @@ const Meals = [
       "Zitronendressing",
     ],
   },
-
   {
     name: "Gebackene Süßkartoffeln mit Kichererbsen",
     categories: [
@@ -416,7 +412,6 @@ const Meals = [
     nutritions: { calories: 550, protein: 35, carbs: 40, fat: 25 },
     ingredients: ["Lachs", "Quinoa", "Spargel", "Olivenöl", "Zitrone"],
   },
-
   {
     name: "Veggie-Paella mit Reis und frischen Kräutern",
     categories: [

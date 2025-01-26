@@ -1,8 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -17,14 +22,56 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { RefreshCw, Download, PlusCircle } from "lucide-react";
-import Meals from "@/data/meals";
+import { RefreshCw, Download, PlusCircle, CloudCog } from "lucide-react";
+
+import { supabase } from "@/lib/supabase";
+import RecipeCard from "@/components/RecipeCard";
 
 // Erweiterte Mahlzeiten-Datenbank mit Nährwerten
 
+const ALL_CATEGORIES = [
+  "Abwechslungsreich",
+  "Saisonal",
+  "Regional",
+  "Salat",
+  "Dampfgemüse",
+  "Hülsenfrüchte",
+  "Getreide",
+  "Vollkorn",
+  "Fett",
+  "Eiweiß",
+  "Käsegerichte",
+  "Fleischgerichte",
+  "Fischgerichte",
+  "Nudelgerichte",
+  "Eintopfgerichte",
+  "Pfannengericht",
+  "Ofengerichte",
+  "Internationale Gerichte",
+  "Fermentiertes",
+  "Vegetarische Gerichte",
+  "Vegane Gerichte",
+  "Low-Carb Gerichte",
+  "Snacks und Fingerfood",
+];
+
 const Mahlzeitsplaner = () => {
+  const [recipes, setRecipes] = useState([]);
   const [mealPlan, setMealPlan] = useState([]);
   const [checkedItems, setCheckedItems] = useState({});
+  const [newMeal, setNewMeal] = useState({
+    title: "",
+    categories: [],
+    nutritions: { kcal: 0, protein: 0, carbs: 0, fat: 0 },
+  });
+
+  const [preferences, setPreferences] = useState({
+    dietType: "Alles",
+    maxCalories: 800,
+    minProtein: 20,
+  });
+
+  const [shoppingList, setShoppingList] = useState<string[]>([]);
 
   const toggleChecked = (mealDay, ingredient) => {
     setCheckedItems((prev) => ({
@@ -36,100 +83,226 @@ const Mahlzeitsplaner = () => {
     }));
   };
 
-  const [preferences, setPreferences] = useState({
-    dietType: "Alles",
-    maxCalories: 800,
-    minProtein: 20,
-  });
-  const [newMeal, setNewMeal] = useState({
-    name: "",
-    categories: [],
-    nutritions: { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  });
-  const [shoppingList, setShoppingList] = useState<string[]>([]);
+  useEffect(() => {
+    fetchRecipes();
+  }, []);
 
-  const ALL_CATEGORIES = [
-    "Abwechslungsreich",
-    "Saisonal",
-    "Regional",
-    "Salat",
-    "Dampfgemüse",
-    "Hülsenfrüchte",
-    "Getreide",
-    "Vollkorn",
-    "Fett",
-    "Eiweiß",
-    "Käsegerichte",
-    "Fleischgerichte",
-    "Fischgerichte",
-    "Nudelgerichte",
-    "Eintopfgerichte",
-    "Pfannengericht",
-    "Ofengerichte",
-    "Internationale Gerichte",
-    "Fermentiertes",
-    "Vegetarische Gerichte",
-    "Vegane Gerichte",
-    "Low-Carb Gerichte",
-    "Snacks und Fingerfood",
-  ];
+  const fetchRecipes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .select();
 
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setRecipes(data);
+        console.log(data);
+      }
+    } catch (error) {
+      console.error('Error fetching recipes:', error);
+    }
+  };
+
+  const generateNewRecipe = (dayIndex: number) => {
+    const filteredMeals = recipes.filter((meal) => {
+      if (meal.diet) {
+        if (preferences.dietType === "Vegetarian") {
+          return meal.diet.includes("Vegetarian");
+        }
+        if (preferences.dietType === "Vegan") {
+          return meal.diet?.includes("Vegan");
+        }
+        if (preferences.dietType === "Fleisch") {
+          return meal.diet?.includes("Fleischgerichte");
+        }
+      }
+      return true;
+    });
+
+    const currentMeals = new Set(mealPlan.map(day => day.meal));
+    let newRecipe;
+    
+    do {
+      const randomIndex = Math.floor(Math.random() * filteredMeals.length);
+      newRecipe = filteredMeals[randomIndex];
+    } while (currentMeals.has(newRecipe.title));
+
+    setMealPlan(prevPlan => {
+      const newPlan = [...prevPlan];
+      newPlan[dayIndex] = {
+        day: `Tag ${dayIndex + 1}`,
+        meal: newRecipe.title,
+        categories: newRecipe.categories,
+        nutritions: newRecipe.nutritions,
+        ingredients: newRecipe.ingredients,
+        image_url: newRecipe.image_url,
+      };
+      return newPlan;
+    });
+  };
+
+  // Add new state for held recipes
+  const [heldRecipes, setHeldRecipes] = useState<Set<number>>(new Set());
+  
+  // Add function to handle hold/unhold
+  const toggleHoldRecipe = (index: number) => {
+    setHeldRecipes(prev => {
+      const newHeld = new Set(prev);
+      if (newHeld.has(index)) {
+        newHeld.delete(index);
+      } else {
+        newHeld.add(index);
+      }
+      return newHeld;
+    });
+  };
+  
+  // Modify generateMealPlan
   const generateMealPlan = () => {
-    const allMeals = Object.entries(Meals).flatMap(
-      ([category, meals]) => meals
-    );
-
-    // Filter basierend auf Präferenzen
-    const filteredMeals = allMeals.filter(
-      (meal) =>
-        (preferences.dietType === "Alles" ||
-          meal.categories.includes(preferences.dietType)) &&
-        meal.nutritions.calories <= preferences.maxCalories &&
-        meal.nutritions.protein >= preferences.minProtein
-    );
+    const filteredMeals = recipes.filter((meal) => {
+      if (meal.diet) {
+        if (preferences.dietType === "Vegetarian") {
+          return meal.diet.includes("Vegetarian");
+        }
+        if (preferences.dietType === "Vegan") {
+          return meal.diet?.includes("Vegan");
+        }
+        if (preferences.dietType === "Fleisch") {
+          return meal.diet?.includes("Fleischgerichte");
+        }
+      }
+      return true;
+    });
 
     const selectedMeals = new Set();
-    const mealPlan = [];
+    let newMealPlan = [];
 
-    while (mealPlan.length < 7 && filteredMeals.length > selectedMeals.size) {
-      const randomIndex = Math.floor(Math.random() * filteredMeals.length);
-      const randomMeal = filteredMeals[randomIndex];
+    // If there are existing meals, preserve the held ones
+    if (mealPlan.length > 0) {
+      newMealPlan = mealPlan.map((meal, index) => {
+        if (heldRecipes.has(index)) {
+          selectedMeals.add(meal.meal);
+          return meal;
+        }
+        return null;
+      });
+    } else {
+      newMealPlan = Array(7).fill(null);
+    }
 
-      if (!selectedMeals.has(randomMeal.name)) {
-        selectedMeals.add(randomMeal.name);
-        mealPlan.push({
-          day: `Tag ${mealPlan.length + 1}`,
-          meal: randomMeal.name,
-          categories: randomMeal.categories,
-          nutritions: randomMeal.nutritions,
-          ingredients: randomMeal.ingredients,
-        });
+    // Fill in non-held positions with new recipes
+    for (let i = 0; i < 7; i++) {
+      if (!heldRecipes.has(i)) {
+        let newRecipe;
+        do {
+          const randomIndex = Math.floor(Math.random() * filteredMeals.length);
+          newRecipe = filteredMeals[randomIndex];
+        } while (selectedMeals.has(newRecipe.title));
+
+        selectedMeals.add(newRecipe.title);
+        newMealPlan[i] = {
+          day: `Tag ${i + 1}`,
+          meal: newRecipe.title,
+          categories: newRecipe.categories,
+          nutritions: newRecipe.nutritions,
+          ingredients: newRecipe.ingredients,
+          image_url: newRecipe.image_url,
+        };
       }
     }
 
-    setMealPlan(mealPlan);
-    generateShoppingList(mealPlan);
+    setMealPlan(newMealPlan);
+    generateShoppingList(newMealPlan);
+  };
+  
+  // Essensplan herunterladen as a PDF file
+  // mit den ausgewählten Mahlzeiten
+  // und den Zutaten
+  const downloadPlan = () => {
+    const blob = new Blob(
+      [
+        mealPlan
+          .map(
+            (day) =>
+              `${day.day}: ${day.meal}\n${day.ingredients
+                .map(
+                  (ingredient) =>
+                    `- ${ingredient.amount} ${ingredient.unit} ${ingredient.name} `
+                )
+                .join("\n")}\n`
+          )
+          .join("\n"),
+      ],
+      {
+        type: "text/plain",
+      }
+    );
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Essensplan.txt";
+    a.click();
   };
 
   // Einkaufslisten-Generierung basierend auf Mahlzeiten
+  // Update generateShoppingList to use the recipes state
   const generateShoppingList = (meals) => {
-    const allMeals = Object.values(Meals).flat();
-    const flatIngredients = allMeals.flatMap((meal) => meal.ingredients);
+    const flatIngredients = meals.flatMap((meal) =>
+      meal.ingredients.map((part) => `${part.amount} ${part.unit} ${part.name}`)
+    );
     // Deduplizieren der Zutaten
     setShoppingList([...new Set(flatIngredients)]);
   };
 
-  // Neue Mahlzeit zur Datenbank hinzufügen
-  const addNewMeal = () => {
-    const category = newMeal.categories[0];
-    if (!Meals[category]) {
-      Meals[category] = [];
+  // Update addNewMeal to work with Supabase
+  const addNewMeal = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('recipes')
+        .insert([newMeal])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      if (data) {
+        setRecipes(prev => [...prev, ...data]);
+        setNewMeal({
+          title: "",
+          categories: [],
+          nutritions: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+        });
+      }
+    } catch (error) {
+      console.error('Error adding new meal:', error);
     }
-    Meals[category].push(newMeal);
-    setNewMeal({
-      name: "",
-      categories: [],
-      nutritions: { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  };
+
+  // Einkaufsliste herunterladen as a PDF file
+  const downloadList = () => {
+    const blob = new Blob([shoppingList.join("\n")], {
+      type: "text/plain",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "Einkaufsliste.txt";
+    a.click();
+  };
+
+  // Neue Mahlzeit zur Datenbank hinzufügen
+  //TODO
+
+  const handleCategoryChange = (category) => {
+    setNewMeal((prev) => {
+      const categories = prev.categories.includes(category)
+        ? prev.categories.filter((cat) => cat !== category)
+        : [...prev.categories, category];
+      return { ...prev, categories: categories.slice(0, 4) };
     });
   };
 
@@ -138,35 +311,10 @@ const Mahlzeitsplaner = () => {
       {/* Präferenz-Einstellungen */}
       <Card>
         <CardHeader>
-          <CardTitle>Ernährungspräferenzen</CardTitle>
+          <CardTitle>7-Tage Essensplan</CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-3 gap-4">
-          <div>
-            <Label>Ernährungstyp</Label>
-            <Select
-              value={preferences.dietType}
-              onValueChange={(val) =>
-                setPreferences((p) => ({ ...p, dietType: val }))
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Wählen" />
-              </SelectTrigger>
-              <SelectContent>
-                {[
-                  "Alles",
-                  "Vegetarische Gerichte",
-                  "Vegane Gerichte",
-                  "Fleischgerichte",
-                ].map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
+          {/* <div>
             <Label>Max. Kalorien pro Mahlzeit</Label>
             <Input
               type="number"
@@ -178,8 +326,8 @@ const Mahlzeitsplaner = () => {
                 }))
               }
             />
-          </div>
-          <div>
+          </div> */}
+          {/* <div>
             <Label>Min. Protein (g)</Label>
             <Input
               type="number"
@@ -191,7 +339,7 @@ const Mahlzeitsplaner = () => {
                 }))
               }
             />
-          </div>
+          </div> */}
         </CardContent>
       </Card>
 
@@ -199,50 +347,54 @@ const Mahlzeitsplaner = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex justify-between items-center">
-            7-Tage Essensplan
+            <div>
+              <Label>Ernährungstyp</Label>
+              <Select
+                value={preferences.dietType}
+                onValueChange={(val) => {
+                  setPreferences((p) => ({ ...p, dietType: val }));
+                  console.log(val);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Wählen" />
+                </SelectTrigger>
+                <SelectContent>
+                  {["Alles", "Vegetarian", "Vegan", "Fleisch"].map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button onClick={generateMealPlan}>
               <RefreshCw className="mr-2" /> Generieren
+            </Button>
+            <Button
+              className={mealPlan.length > 0 ? "" : "hidden"}
+              onClick={downloadPlan}
+            >
+              <Download className="mr-2 " /> Essensplan herunterladen
             </Button>
           </CardTitle>
         </CardHeader>
         <CardContent>
           {mealPlan.map((day, index) => (
-            <div key={index} className="p-4 border rounded mb-4 text-left">
-              <h3 className="mb-4">
-                {day.day}: {day.meal}
-              </h3>
+            // Remove this standalone RecipeCard component
+            // Update RecipeCard props in the render section
+            <RecipeCard
+              key={index}
+              day={day}
+              onGenerateNew={() => generateNewRecipe(index)}
+              checkedItems={checkedItems}
+              toggleChecked={toggleChecked}
+              index={index}
+              isHeld={heldRecipes.has(index)}
+              onToggleHold={() => toggleHoldRecipe(index)}
+            />
 
-              <div className="flex justify-between">
-                <ul>
-                  {day.ingredients.map((ingredient) => (
-                    <li
-                      key={ingredient}
-                      className="flex items-center space-x-2"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checkedItems[day.day]?.[ingredient] || false}
-                        onChange={() => toggleChecked(day.day, ingredient)}
-                      />
-                      <span
-                        style={{
-                          textDecoration: checkedItems[day.day]?.[ingredient]
-                            ? "line-through"
-                            : "none",
-                        }}
-                      >
-                        {ingredient}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-                <ul className="flex flex-col text-right">
-                  {day.categories.map((category) => (
-                    <li key={category}>{category}</li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            // Keep all other functions and the return statement with the correct RecipeCard usage in CardContent
           ))}
         </CardContent>
       </Card>
@@ -251,10 +403,10 @@ const Mahlzeitsplaner = () => {
       <Dialog>
         <DialogTrigger asChild>
           <Button>
-            <PlusCircle className="mr-2" /> Neues Gericht hinzufügen
+            <PlusCircle className="mr-2 " /> Neues Gericht hinzufügen
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="text-black">
           <DialogHeader>
             <DialogTitle>Neues Gericht hinzufügen</DialogTitle>
           </DialogHeader>
@@ -262,9 +414,9 @@ const Mahlzeitsplaner = () => {
             <div>
               <Label>Gerichtname</Label>
               <Input
-                value={newMeal.name}
+                value={newMeal.title}
                 onChange={(e) =>
-                  setNewMeal((m) => ({ ...m, name: e.target.value }))
+                  setNewMeal((m) => ({ ...m, title: e.target.value }))
                 }
               />
             </div>
@@ -280,10 +432,18 @@ const Mahlzeitsplaner = () => {
                   <SelectValue placeholder="Kategorien wählen" />
                 </SelectTrigger>
                 <SelectContent>
-                  {ALL_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
+                  {ALL_CATEGORIES.map((category) => (
+                    <div key={category}>
+                      <input
+                        type="checkbox"
+                        id={category}
+                        checked={newMeal.categories.includes(category)}
+                        onChange={() => handleCategoryChange(category)}
+                      />
+                      <label htmlFor={category} className="ml-2">
+                        {category}
+                      </label>
+                    </div>
                   ))}
                 </SelectContent>
               </Select>

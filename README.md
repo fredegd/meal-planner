@@ -1,5 +1,5 @@
 # Meal Planner App
-## This project is a Meal Planning Application designed to create dynamic weekly meal plans and shopping lists. It features a rich database of meals categorized by dietary preferences, nutritional values, and ingredients.
+ This project is a Meal Planning Application designed to create dynamic weekly meal plans and shopping lists. It features a rich database of meals categorized by dietary preferences, nutritional values, and ingredients.
 
 # Features:
 - Generate randomized weekly meal plans with no duplicate dishes.
