@@ -4,10 +4,33 @@ import { supabase } from "@/lib/supabase";
 import { Button } from "@/app/_components/ui/button";
 import Image from "next/image";
 
+interface Recipe {
+  id: number;
+  title: string;
+  diet?: string[];
+  categories: string[];
+  nutritions: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  ingredients: {
+    name: string;
+    amount: number;
+    unit: string;
+  }[];
+  image_url: string;
+  rating: {
+    ratingValue: number;
+    ratingCount: number;
+  };
+}
+
 const DEFAULT_IMAGE_URL = "https://placehold.co/300x200";
 
 export default function RecipesList() {
-  const [recipes, setRecipes] = useState([]);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [viewMode, setViewMode] = useState("grid");
   const [sortOption, setSortOption] = useState("title");
 

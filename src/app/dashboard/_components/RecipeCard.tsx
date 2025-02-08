@@ -2,29 +2,44 @@
 
 import { Lock, RefreshCw } from "lucide-react";
 import { Button } from "@/app/_components/ui/button";
+import Image from "next/image";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/app/_components/ui/popover";
 
+interface Nutrition {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+interface Ingredient {
+  name: string;
+  amount: number;
+  unit: string;
+}
+
 interface RecipeCardProps {
   day: {
     day: string;
     meal: string;
     categories: string[];
-    nutritions: any;
-    ingredients: any[];
+    nutritions: Nutrition;
+    ingredients: Ingredient[];
     image_url: string;
   };
   onGenerateNew: (dayNumber: number) => void;
-  checkedItems: any;
+  checkedItems: Record<string, Record<string, boolean>>;
   toggleChecked: (day: string, ingredient: string) => void;
   index: number;
   isHeld: boolean;
   onToggleHold: () => void;
 }
 
+const DEFAULT_IMAGE_URL = "https://placehold.co/300x200";
 export default function RecipeCard({
   day,
   onGenerateNew,
@@ -59,9 +74,11 @@ export default function RecipeCard({
       </div>
 
       <div className="flex justify-between items-start mt-4">
-        <img
-          src={day.image_url}
-          alt=""
+        <Image
+          src={day.image_url || DEFAULT_IMAGE_URL}
+          alt={day.meal}
+          width={240}
+          height={160}
           className="w-60 max-h-40 object-cover"
         />
 

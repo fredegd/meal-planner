@@ -13,10 +13,53 @@ import {
   SelectValue,
 } from "@/app/_components/ui/select";
 
+interface MealPlanItem {
+  day: string;
+  meal: string;
+  categories: string[];
+  nutritions: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  ingredients: {
+    name: string;
+    amount: number;
+    unit: string;
+  }[];
+  image_url: string;
+}
+
+interface Recipe {
+  id: number;
+  title: string;
+  diet?: string[];
+  categories: string[];
+  nutritions: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+  };
+  ingredients: {
+    name: string;
+    amount: number;
+    unit: string;
+  }[];
+  image_url: string;
+}
+// Add this interface near your other interfaces
+interface CheckedItems {
+  [mealDay: string]: {
+    [ingredient: string]: boolean;
+  };
+}
+
 export default function Dashboard() {
-  const [recipes, setRecipes] = useState([]);
-  const [mealPlan, setMealPlan] = useState([]);
-  const [checkedItems, setCheckedItems] = useState({});
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [mealPlan, setMealPlan] = useState<MealPlanItem[]>([]);
+  const [checkedItems, setCheckedItems] = useState<CheckedItems>({});
   const [heldRecipes, setHeldRecipes] = useState<Set<number>>(new Set());
   const [preferences, setPreferences] = useState({
     dietType: "Alles",
