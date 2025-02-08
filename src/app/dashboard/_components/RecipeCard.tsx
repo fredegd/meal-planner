@@ -1,13 +1,13 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
+"use client";
+
+import { Lock, RefreshCw } from "lucide-react";
+import { Button } from "@/app/_components/ui/button";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@/components/ui/popover";
-import { Lock, RefreshCcw } from "lucide-react";
+} from "@/app/_components/ui/popover";
 
-// Update interface
 interface RecipeCardProps {
   day: {
     day: string;
@@ -25,8 +25,7 @@ interface RecipeCardProps {
   onToggleHold: () => void;
 }
 
-// Remove useState and update the component
-const RecipeCard = ({
+export default function RecipeCard({
   day,
   onGenerateNew,
   checkedItems,
@@ -34,28 +33,27 @@ const RecipeCard = ({
   index,
   isHeld,
   onToggleHold,
-}: RecipeCardProps) => {
+}: RecipeCardProps) {
   return (
-    <div className="p-4 border rounded mb-4 text-left" id="recipe-card">
+    <div className="p-4 border rounded mb-4 text-left">
       <div className="flex justify-between">
         <h5 className="mb-4">
           {day.day}: {day.meal}
         </h5>
-        <div className="flex gap-3 justify-end ">
+        <div className="flex gap-3 justify-end">
           <Button
             className="flex items-center justify-center"
             variant={isHeld ? "secondary" : "outline"}
             onClick={onToggleHold}
           >
-            <Lock className=" h-4 w-4" />
-            {/* {isHeld ? "Held" : "Hold"} */}
+            <Lock className="h-4 w-4" />
           </Button>
           <Button
             className="flex items-center justify-center"
             onClick={() => onGenerateNew(index)}
             disabled={isHeld}
           >
-            <RefreshCcw className=" h-4 w-4" />
+            <RefreshCw className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -109,6 +107,4 @@ const RecipeCard = ({
       </div>
     </div>
   );
-};
-
-export default RecipeCard;
+}
