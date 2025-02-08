@@ -307,7 +307,7 @@ const Mahlzeitsplaner = () => {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-4 w-[900px] ">
+    <div className="container mx-auto p-4 space-y-4 lg:w-[900px] w-full sticky top-0 ">
       {/* Präferenz-Einstellungen */}
       <Card>
         <CardHeader>
@@ -346,7 +346,7 @@ const Mahlzeitsplaner = () => {
       {/* Mahlzeiten-Plan */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex justify-between items-center">
+          <CardTitle className="flex justify-between items-center flex-wrap gap-2">
             <div>
               <Label>Ernährungstyp</Label>
               <Select

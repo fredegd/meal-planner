@@ -26,39 +26,47 @@ interface RecipeCardProps {
 }
 
 // Remove useState and update the component
-const RecipeCard = ({ 
-  day, 
-  onGenerateNew, 
-  checkedItems, 
-  toggleChecked, 
+const RecipeCard = ({
+  day,
+  onGenerateNew,
+  checkedItems,
+  toggleChecked,
   index,
   isHeld,
-  onToggleHold 
+  onToggleHold,
 }: RecipeCardProps) => {
   return (
     <div className="p-4 border rounded mb-4 text-left" id="recipe-card">
-     <h3 className="mb-4">
-        {day.day}: {day.meal}
-      </h3>
-      <div className="flex gap-3 justify-end ">
-      <Button
+      <div className="flex justify-between">
+        <h5 className="mb-4">
+          {day.day}: {day.meal}
+        </h5>
+        <div className="flex gap-3 justify-end ">
+          <Button
+            className="flex items-center justify-center"
             variant={isHeld ? "secondary" : "outline"}
             onClick={onToggleHold}
           >
-            <Lock className="mr-2 h-4 w-4" />
-            {isHeld ? "Held" : "Hold"}
+            <Lock className=" h-4 w-4" />
+            {/* {isHeld ? "Held" : "Hold"} */}
           </Button>
           <Button
+            className="flex items-center justify-center"
             onClick={() => onGenerateNew(index)}
             disabled={isHeld}
           >
-            <RefreshCcw className="mr-2 h-4 w-4" />
-            Generate New
+            <RefreshCcw className=" h-4 w-4" />
           </Button>
+        </div>
       </div>
-      
-      <img src={day.image_url} alt="" className="w-60 max-h-40" />
-      <div className="flex justify-between items-center mt-4">
+
+      <div className="flex justify-between items-start mt-4">
+        <img
+          src={day.image_url}
+          alt=""
+          className="w-60 max-h-40 object-cover"
+        />
+
         <div className="flex gap-2">
           <Popover>
             <PopoverTrigger asChild>
@@ -97,7 +105,6 @@ const RecipeCard = ({
               </ul>
             </PopoverContent>
           </Popover>
-          
         </div>
       </div>
     </div>
